@@ -1822,6 +1822,7 @@ tensorT SCF::derivatives(World & world, const functionT& rho) const {
 		}
 	}
 	//if (world.rank() == 0) print("derivatives:\n", r, ru, rc, ra);
+
 	r += ra + ru + rc;
 	END_TIMER(world, "derivatives");
 
