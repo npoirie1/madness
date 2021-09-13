@@ -329,8 +329,14 @@ void Molecule::print() const {
     printf("   units atomic\n");
     //printf("   Finite Field %11.8f %20.8f %20.8f\n", field[0], field[1], field[2]);
     for (size_t i=0; i<natom(); ++i) {
-        printf("   %-2s  %20.8f %20.8f %20.8f", get_atomic_data(atoms[i].atomic_number).symbol,
-               atoms[i].x, atoms[i].y, atoms[i].z);
+    	std::string symbol = get_atomic_data(atoms[i].atomic_number).symbol;
+    	// print in case that we have a customized atom
+    	// e.g. H_1.5 is a H atom with charge 1.5. We need the H symbol to specify the basis function in the initial scf guess
+    	// and to avoid having non-integer number of electrons
+    	if (atoms[i].q != double(atoms[i].atomic_number)){
+    		symbol += "_"+std::to_string(atoms[i].q);
+    	}
+        printf("   %-2s  %20.8f %20.8f %20.8f", symbol , atoms[i].x, atoms[i].y, atoms[i].z);
         if (atoms[i].atomic_number == 0) printf("     %20.8f", atoms[i].q);
         printf("\n");
     }
