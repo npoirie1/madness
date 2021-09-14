@@ -352,18 +352,12 @@ double Molecule::inter_atomic_distance(unsigned int i,unsigned int j) const {
 
 double Molecule::nuclear_repulsion_energy() const {
     double sum = 0.0;
-    unsigned int z1, z2;
+    double z1, z2;
     for (size_t i=0; i<atoms.size(); ++i) {
-        if (atoms[i].pseudo_atom){
-            z1 = atoms[i].q;}
-        else{
-            z1 = atoms[i].atomic_number;}
+            z1 = atoms[i].q;
         if (core_pot.is_defined(z1)) z1 -= core_pot.n_core_orb(z1) * 2;
         for (size_t j=i+1; j<atoms.size(); ++j) {
-            if (atoms[j].pseudo_atom){
-                z2 = atoms[j].q;}
-            else{
-                z2 = atoms[j].atomic_number;}
+        	z2 = atoms[j].q;
             if (core_pot.is_defined(z2)) z2 -= core_pot.n_core_orb(z2) * 2;
             sum += z1 * z2 / inter_atomic_distance(i,j);
         }
@@ -372,13 +366,12 @@ double Molecule::nuclear_repulsion_energy() const {
 }
 
 double Molecule::nuclear_dipole(int axis) const {
+	// convenition to stay consistent and independent of cartesian origin
+	auto coc = center_of_charge()[axis];
     double sum = 0.0;
     for (size_t atom = 0; atom < atoms.size(); ++atom) {
-        unsigned int z;
-        if (atoms[atom].pseudo_atom){
-            z = atoms[atom].q;}
-        else{
-            z = atoms[atom].atomic_number;}
+        double z = atoms[atom].q;
+
         if (core_pot.is_defined(z)) z -= core_pot.n_core_orb(z) * 2;
         double r;
         switch (axis) {
@@ -387,7 +380,7 @@ double Molecule::nuclear_dipole(int axis) const {
             case 2: r = atoms[atom].z; break;
             default: MADNESS_EXCEPTION("invalid axis", 0);
         }
-        sum += r*z;
+        sum += (r-coc)*z;
     }
     return sum;
 }
@@ -401,11 +394,11 @@ Tensor<double> Molecule::nuclear_dipole_derivative(const int atom, const int axi
 
 double Molecule::nuclear_repulsion_derivative(size_t i, int axis) const {
     double sum = 0.0;
-    unsigned int z1 = atoms[i].atomic_number;
+    double z1 = atoms[i].q;
     if (core_pot.is_defined(z1)) z1 -= core_pot.n_core_orb(z1) * 2;
     for (size_t j=0; j<atoms.size(); ++j) {
         if (j != i) {
-            size_t z2 = atoms[j].atomic_number;
+            double z2 = atoms[j].q;
             if (core_pot.is_defined(z2)) z2 -= core_pot.n_core_orb(z2) * 2;
             double r = inter_atomic_distance(i,j);
             double xx;
@@ -447,8 +440,8 @@ double Molecule::nuclear_repulsion_second_derivative(int iatom, int jatom,
         int iaxis, int jaxis) const {
 
     double sum = 0.0;
-    unsigned int ZA = atoms[iatom].atomic_number;
-    unsigned int ZB = atoms[jatom].atomic_number;
+    double ZA = atoms[iatom].q;
+    double ZB = atoms[jatom].q;
 
     Tensor<double> RA(3), RB(3);
     RA(0l)=atoms[iatom].x; RA(1)=atoms[iatom].y; RA(2)=atoms[iatom].z;
@@ -476,7 +469,7 @@ double Molecule::nuclear_repulsion_second_derivative(int iatom, int jatom,
             double RAC = inter_atomic_distance(iatom,katom);
             Tensor<double> RC(3);
             RC(0l)=atoms[katom].x; RC(1)=atoms[katom].y; RC(2)=atoms[katom].z;
-            const unsigned int ZC=atoms[katom].atomic_number;
+            const double ZC=atoms[katom].q;
 
             if (katom != (unsigned int)(iatom)) {
                 if (iaxis==jaxis) {
@@ -691,6 +684,22 @@ Tensor<double> Molecule::center_of_mass() const {
     return com;
 }
 
+/// compute the center of charge
+Tensor<double> Molecule::center_of_charge() const {
+    Tensor<double> coc(3);
+    double xx=0.0, yy=0.0, zz=0.0, qq=0.0;
+    for (unsigned int i=0; i<natom(); ++i) {
+        xx += get_atom(i).x*get_atom(i).q;
+        yy += get_atom(i).y*get_atom(i).q;
+        zz += get_atom(i).z*get_atom(i).q;
+        qq += get_atom(i).q;
+    }
+    coc(0l)=xx/qq;
+    coc(1l)=yy/qq;
+    coc(2l)=zz/qq;
+    return coc;
+}
+
 // Align molecule with axes of inertia
 Tensor<double> Molecule::moment_of_inertia() const {
     madness::Tensor<double> I(3L,3L);
@@ -713,7 +722,7 @@ void Molecule::orient(bool verbose) {
     // Align molecule with axes of charge inertia
     madness::Tensor<double> I(3L,3L);
     for (unsigned int i=0; i<atoms.size(); ++i) {
-        double q = atoms[i].atomic_number, x[3] = {atoms[i].x, atoms[i].y, atoms[i].z};
+        double q = atoms[i].q, x[3] = {atoms[i].x, atoms[i].y, atoms[i].z};
         for (int j=0; j<3; ++j)
             for (int k=0; k<3; ++k)
                 I(j,k) += q*x[j]*x[k];
@@ -799,7 +808,7 @@ double Molecule::mol_nuclear_charge_density(double x, double y, double z) const 
     for (unsigned int i=0; i<atoms.size(); i++) {
         double r = distance(x, y, z, atoms[i].x, atoms[i].y, atoms[i].z)*rcut[i];
         if (r < 6.0) {
-            return atoms[i].atomic_number*smoothed_density(r)*rcut[i]*rcut[i]*rcut[i];
+            return atoms[i].q*smoothed_density(r)*rcut[i]*rcut[i]*rcut[i];
         }
     }
     return  0.0;

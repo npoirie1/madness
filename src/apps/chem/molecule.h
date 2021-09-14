@@ -286,6 +286,8 @@ public:
 
     Tensor<double> center_of_mass() const;
 
+    Tensor<double> center_of_charge() const;
+
     /// compute the mass-weighting matrix for the hessian
 
     /// use as
