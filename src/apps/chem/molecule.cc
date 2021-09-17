@@ -336,7 +336,7 @@ void Molecule::print() const {
     	if (atoms[i].q != double(atoms[i].atomic_number)){
     		symbol += "_"+std::to_string(atoms[i].q);
     	}
-        printf("   %-2s  %20.8f %20.8f %20.8f", symbol , atoms[i].x, atoms[i].y, atoms[i].z);
+        printf("   %-8s  %20.8f %20.8f %20.8f", symbol.c_str() , atoms[i].x, atoms[i].y, atoms[i].z);
         if (atoms[i].atomic_number == 0) printf("     %20.8f", atoms[i].q);
         printf("\n");
     }
