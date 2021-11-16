@@ -108,6 +108,32 @@ int test_slater_exchange(World& world) {
 
 }
 
+int test_external_parameters(World& world) {
+
+    real_function_3d dens=real_factory_3d(world).f(slater2).truncate_on_project();
+
+    const bool spin_polarized=false;
+    const std::string lower_xc_data =
+            "GGA_X_ITYH_PBE .75 EXTERNAL_PARAMETERS {OMEGA: 0.2, kappa: 1.2} GGA_C_PBE 1. HF_X .25";
+    XCOperator lower_xc(world, lower_xc_data, spin_polarized, copy(dens), copy(dens));
+
+    double lower_energy=lower_xc.compute_xc_energy();
+    print("lower xc energy:", lower_energy);
+
+    const std::string greater_xc_data =
+            "GGA_X_ITYH_PBE .75 EXTERNAL_PARAMETERS {kappa: 1.2, _omega: 200} GGA_C_PBE 1. HF_X .25";
+    XCOperator greater_xc(world, greater_xc_data, spin_polarized, copy(dens), copy(dens));
+    double greater_energy = greater_xc.compute_xc_energy();
+    print("greater xc energy:", greater_energy);
+
+    if (lower_energy < greater_energy) {
+        return 0;
+    }
+    else {
+        return 1;
+    }
+}
+
 int main(int argc, char** argv) {
     madness::initialize(argc, argv);
 
@@ -122,6 +148,7 @@ int main(int argc, char** argv) {
     int result=0;
 
     result+=test_slater_exchange(world);
+    result+= test_external_parameters(world);
 
     if (world.rank()==0) {
         if (result==0) print("\ntests passed\n");

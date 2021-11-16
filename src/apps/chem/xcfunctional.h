@@ -213,6 +213,35 @@ private:
         return rho;
     }
 
+    void set_external_parameters_if_a_functional_has_been_specified(std::stringstream &line);
+
+    void set_external_parameters(std::stringstream &line);
+
+    static std::pair<std::vector<std::string>, std::vector<double>> get_external_parameter_name_and_value_pair(
+            const xc_func_type *current_functional);
+
+    static void format_dictionary_key_if_input_ends_in_colon(std::string &dictionary_key);
+
+    static void format_extra_parameters_dictionary_key(std::string &dictionary_key);
+
+    [[ noreturn ]] static void throw_key_must_be_followed_by_colon();
+
+    static double get_dictionary_value_if_input_ends_with_coma_or_closing_brace(std::string &dictionary_value_string,
+                                                                                bool &found_closing_brace);
+
+    static double get_dictionary_value_as_double_by_neglecting_last_character(
+            const std::string &dictionary_value_string);
+
+    [[ noreturn ]] static void throw_if_dictionary_value_string_does_not_end_correctly();
+
+    static std::pair<std::vector<std::string>, std::vector<double>>
+    get_updated_external_parameters_name_value_pair_if_key_exists(
+            const std::pair<std::vector<std::string>, std::vector<double>> &parameters_name_value_pair,
+            const std::string &dictionary_key, double dictionary_value);
+
+
+    static void throw_exception_if_key_was_not_found(const std::string &dictionary_key, bool found_key);
+
 public:
     /// Default constructor is required
     XCfunctional();
