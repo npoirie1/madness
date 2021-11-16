@@ -2,6 +2,7 @@
 #include <chem/xcfunctional.h>
 #include <madness/tensor/tensor.h>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <sstream>
 #include <utility>
@@ -106,6 +107,8 @@ void XCfunctional::initialize(const std::string& input_line, bool polarized,
             line >> rhotol;
         } else if (name == "GGATOL") {
             line >> ggatol;
+        } else if (name == "EXTERNAL_PARAMETERS") {
+            set_external_parameters_if_a_functional_has_been_specified(line);
         } else if (name == "HF" || name == "HF_X") {
             if (! (line >> factor)) factor = 1.0;
             hf_coeff = factor;
@@ -134,6 +137,145 @@ void XCfunctional::initialize(const std::string& input_line, bool polarized,
         print("         ggatol",ggatol);
         if (printit) print("polarized ",polarized,"\n");
 
+    }
+}
+
+void XCfunctional::set_external_parameters_if_a_functional_has_been_specified(std::stringstream &line) {
+    if (funcs.empty()) {
+        throw std::runtime_error("A functional must be specified before specifying the external parameters!");
+    }
+    else {
+        set_external_parameters(line);
+    }
+}
+
+void XCfunctional::set_external_parameters(std::stringstream &line) {
+    xc_func_type* current_functional = funcs.back().first;
+    auto parameters_name_value_pair = get_external_parameter_name_and_value_pair(current_functional);
+
+    line.ignore();
+    if (line.get() == '{') {
+        bool found_closing_brace = false;
+        while (!found_closing_brace) {
+            std::string dictionary_key;
+            std::string dictionary_value_string;
+            if (line >> dictionary_key && line >> dictionary_value_string) {
+                format_dictionary_key_if_input_ends_in_colon(dictionary_key);
+                const double dictionary_value = get_dictionary_value_if_input_ends_with_coma_or_closing_brace(
+                        dictionary_value_string, found_closing_brace);
+
+                parameters_name_value_pair = get_updated_external_parameters_name_value_pair_if_key_exists(
+                        parameters_name_value_pair, dictionary_key, dictionary_value);
+            }
+        }
+        xc_func_set_ext_params(current_functional, parameters_name_value_pair.second.data());
+    }
+    else {
+        throw std::runtime_error("The external parameters must be defined as a dictionary!");
+    }
+}
+
+std::pair<std::vector<std::string>, std::vector<double>> XCfunctional::get_external_parameter_name_and_value_pair(
+        const xc_func_type *current_functional) {
+
+    const int num_parameters = xc_func_info_get_n_ext_params(current_functional->info);
+    std::vector<std::string> parameter_names;
+    parameter_names.reserve(num_parameters);
+    std::vector<double> parameter_values;
+    parameter_values.reserve(num_parameters);
+    for (int i_parameter = 0; i_parameter < num_parameters; ++i_parameter) {
+        parameter_names.emplace_back(xc_func_info_get_ext_params_name(current_functional->info, i_parameter));
+        parameter_values.push_back(xc_func_info_get_ext_params_default_value(current_functional->info, i_parameter));
+    }
+    std::pair<std::vector<std::string>, std::vector<double>> parameter_name_value_pair{parameter_names,
+                                                                                       parameter_values};
+    return parameter_name_value_pair;
+}
+
+void XCfunctional::format_dictionary_key_if_input_ends_in_colon(std::string &dictionary_key) {
+    if (dictionary_key.back() == ':') {
+        format_extra_parameters_dictionary_key(dictionary_key);
+    }
+    else {
+        throw_key_must_be_followed_by_colon();
+    }
+}
+
+void XCfunctional::format_extra_parameters_dictionary_key(std::string &dictionary_key) {
+    dictionary_key.pop_back();
+    if (dictionary_key[0] != '_') {
+        std::transform(dictionary_key.begin(), dictionary_key.end(), dictionary_key.begin(),
+                       [](unsigned char c) { return tolower(c); });
+        const unsigned insertion_index = 0;
+        const unsigned insertion_count = 1;
+        const char character_to_insert = '_';
+        dictionary_key.insert(insertion_index, insertion_count, character_to_insert);
+    }
+}
+
+void XCfunctional::throw_key_must_be_followed_by_colon() {
+    std::string message_0 = "The external parameters dictionary key ";
+    std::string message_1 = "must be followed by a colon!";
+    throw std::runtime_error(message_0 + message_1);
+}
+
+double XCfunctional::get_dictionary_value_if_input_ends_with_coma_or_closing_brace(
+        std::string &dictionary_value_string, bool &found_closing_brace) {
+
+    double dictionary_value;
+    if (dictionary_value_string.back() == ',') {
+        dictionary_value = get_dictionary_value_as_double_by_neglecting_last_character(
+                dictionary_value_string);
+    }
+    else if (dictionary_value_string.back() == '}') {
+        found_closing_brace = true;
+        dictionary_value = get_dictionary_value_as_double_by_neglecting_last_character(
+                dictionary_value_string);
+    }
+    else {
+        throw_if_dictionary_value_string_does_not_end_correctly();
+    }
+    return dictionary_value;
+}
+
+double XCfunctional::get_dictionary_value_as_double_by_neglecting_last_character(const std::string &string_input) {
+    std::string dictionary_value_string = string_input;
+    dictionary_value_string.pop_back();
+    double dictionary_value = std::stod(dictionary_value_string);
+    return dictionary_value;
+}
+
+void XCfunctional::throw_if_dictionary_value_string_does_not_end_correctly() {
+    std::string message_0 = "The external parameters dictionary value ";
+    std::string message_1 = "must be followed by a comma or a closing brace!";
+    throw std::runtime_error(message_0 + message_1);
+}
+
+std::pair<std::vector<std::string>, std::vector<double>>
+XCfunctional::get_updated_external_parameters_name_value_pair_if_key_exists(
+        const std::pair<std::vector<std::string>, std::vector<double>> &parameters_name_value_pair,
+        const std::string &dictionary_key, double dictionary_value) {
+    bool found_key = false;
+    unsigned i_parameter = 0;
+    auto updated_pair = parameters_name_value_pair;
+    const unsigned num_parameters = updated_pair.first.size();
+
+    while (!found_key && i_parameter < num_parameters) {
+        const std::string parameter_name = updated_pair.first[i_parameter];
+        if (parameter_name == dictionary_key) {
+            found_key = true;
+            updated_pair.second[i_parameter] = dictionary_value;
+        }
+        ++i_parameter;
+    }
+    throw_exception_if_key_was_not_found(dictionary_key, found_key);
+    return updated_pair;
+}
+
+void XCfunctional::throw_exception_if_key_was_not_found(const std::string &dictionary_key, bool found_key) {
+    if (!found_key) {
+        const std::string message = "The key " + dictionary_key + " was not found!";
+        throw std::runtime_error(message);
     }
 }
 
