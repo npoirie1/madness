@@ -247,7 +247,7 @@ double XCfunctional::get_dictionary_value_as_double_by_neglecting_last_character
 
 void XCfunctional::throw_if_dictionary_value_string_does_not_end_correctly() {
     std::string message_0 = "The external parameters dictionary value ";
-    std::string message_1 = "must be followed by a coma or a closing brace!";
+    std::string message_1 = "must be followed by a comma or a closing brace!";
     throw std::runtime_error(message_0 + message_1);
 }
 

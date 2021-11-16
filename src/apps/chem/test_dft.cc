@@ -134,6 +134,55 @@ int test_external_parameters(World& world) {
     }
 }
 
+int test_if_xc_data_string_throws_a_runtime_error(World &world, const std::string &xc_data_string) {
+    real_function_3d dens=real_factory_3d(world).f(slater2).truncate_on_project();
+    const bool spin_polarized=false;
+
+    try {
+        XCOperator xc(world, xc_data_string, spin_polarized, copy(dens), copy(dens));
+        return 1;
+    }
+    catch(const std::runtime_error&) {
+        return 0;
+    }
+}
+
+int test_throw_if_external_parameters_are_specified_before_functionals(World& world) {
+    const std::string xc_data =
+            "EXTERNAL_PARAMETERS {OMEGA: 0.2, kappa: 1.2} GGA_X_ITYH_PBE .75 GGA_C_PBE 1. HF_X .25";
+    return test_if_xc_data_string_throws_a_runtime_error(world, xc_data);
+}
+
+int test_throw_if_external_parameters_missing_opening_brace(World& world) {
+    const std::string xc_data =
+            "GGA_X_ITYH_PBE .75 EXTERNAL_PARAMETERS OMEGA: 0.2, kappa: 1.2} GGA_C_PBE 1. HF_X .25";
+    return test_if_xc_data_string_throws_a_runtime_error(world, xc_data);
+}
+
+int test_throw_if_external_parameters_key_is_not_followed_by_colon(World& world) {
+    const std::string xc_data =
+            "GGA_X_ITYH_PBE .75 EXTERNAL_PARAMETERS {OMEGA 0.2, kappa: 1.2} GGA_C_PBE 1. HF_X .25";
+    return test_if_xc_data_string_throws_a_runtime_error(world, xc_data);
+}
+
+int test_throw_if_external_parameters_value_is_not_followed_by_comma(World& world) {
+    const std::string xc_data =
+            "GGA_X_ITYH_PBE .75 EXTERNAL_PARAMETERS {OMEGA: 0.2 kappa: 1.2} GGA_C_PBE 1. HF_X .25";
+    return test_if_xc_data_string_throws_a_runtime_error(world, xc_data);
+}
+
+int test_throw_if_external_parameters_last_value_is_not_followed_by_closing_brace(World& world) {
+    const std::string xc_data =
+            "GGA_X_ITYH_PBE .75 EXTERNAL_PARAMETERS {OMEGA: 0.2, kappa: 1.2 GGA_C_PBE 1. HF_X .25";
+    return test_if_xc_data_string_throws_a_runtime_error(world, xc_data);
+}
+
+int test_throw_if_external_parameters_key_is_not_in_libxc(World& world) {
+    const std::string xc_data =
+            "GGA_X_ITYH_PBE .75 EXTERNAL_PARAMETERS {BAD_OMEGA: 0.2, kappa: 1.2} GGA_C_PBE 1. HF_X .25";
+    return test_if_xc_data_string_throws_a_runtime_error(world, xc_data);
+}
+
 int main(int argc, char** argv) {
     madness::initialize(argc, argv);
 
@@ -147,8 +196,14 @@ int main(int argc, char** argv) {
 
     int result=0;
 
-    result+=test_slater_exchange(world);
-    result+= test_external_parameters(world);
+    result +=test_slater_exchange(world);
+    result += test_external_parameters(world);
+    result += test_throw_if_external_parameters_are_specified_before_functionals(world);
+    result += test_throw_if_external_parameters_missing_opening_brace(world);
+    result += test_throw_if_external_parameters_key_is_not_followed_by_colon(world);
+    result += test_throw_if_external_parameters_value_is_not_followed_by_comma(world);
+    result += test_throw_if_external_parameters_last_value_is_not_followed_by_closing_brace(world);
+    result += test_throw_if_external_parameters_key_is_not_in_libxc(world);
 
     if (world.rank()==0) {
         if (result==0) print("\ntests passed\n");
