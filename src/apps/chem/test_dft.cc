@@ -183,6 +183,24 @@ int test_throw_if_external_parameters_key_is_not_in_libxc(World& world) {
     return test_if_xc_data_string_throws_a_runtime_error(world, xc_data);
 }
 
+int test_hybrid_lda_functional(World& world) {
+
+    real_function_3d dens=real_factory_3d(world).f(slater2).truncate_on_project();
+
+    const bool spin_polarized=false;
+    const std::string xc_data =
+            "HYB_LDA_XC_BN05";
+    XCOperator<double, 3> xc(world, xc_data, spin_polarized, copy(dens), copy(dens));
+
+    try {
+        xc.compute_xc_energy();
+        return 0;
+    }
+    catch (...) {
+        return 1;
+    }
+}
+
 int main(int argc, char** argv) {
     madness::initialize(argc, argv);
 
@@ -204,6 +222,7 @@ int main(int argc, char** argv) {
     result += test_throw_if_external_parameters_value_is_not_followed_by_comma(world);
     result += test_throw_if_external_parameters_last_value_is_not_followed_by_closing_brace(world);
     result += test_throw_if_external_parameters_key_is_not_in_libxc(world);
+    result += test_hybrid_lda_functional(world);
 
     if (world.rank()==0) {
         if (result==0) print("\ntests passed\n");

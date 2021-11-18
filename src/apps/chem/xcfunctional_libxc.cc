@@ -527,11 +527,10 @@ madness::Tensor<double> XCfunctional::exc(const std::vector< madness::Tensor<dou
 
         switch(funcs[i].first->info->family) {
         case XC_FAMILY_LDA:
+        case XC_FAMILY_HYB_LDA:
             xc_lda_exc(funcs[i].first, np, dens, work);
             break;
         case XC_FAMILY_GGA:
-            xc_gga_exc(funcs[i].first, np, dens, sig, work);
-            break;
         case XC_FAMILY_HYB_GGA:
             xc_gga_exc(funcs[i].first, np, dens, sig, work);
             break;
@@ -598,6 +597,7 @@ std::vector<madness::Tensor<double> > XCfunctional::vxc(
     for (unsigned int i=0; i<funcs.size(); i++) {
         switch(funcs[i].first->info->family) {
         case XC_FAMILY_LDA:
+        case XC_FAMILY_HYB_LDA:
         {
             madness::Tensor<double> vrho(nvrho*np);
             double * MADNESS_RESTRICT vr = vrho.ptr();
@@ -725,7 +725,9 @@ std::vector<madness::Tensor<double> > XCfunctional::fxc_apply(
 
     for (unsigned int i=0; i<funcs.size(); i++) {
         switch(funcs[i].first->info->family) {
-        case XC_FAMILY_LDA: {
+        case XC_FAMILY_LDA:
+        case XC_FAMILY_HYB_LDA:
+        {
             double * MADNESS_RESTRICT vr = v2rho2.ptr();
             const double * MADNESS_RESTRICT dens = rho.ptr();
             xc_lda_fxc(funcs[i].first, np, dens, vr);
