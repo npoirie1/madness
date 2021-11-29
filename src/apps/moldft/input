@@ -2,7 +2,10 @@ dft
   xc LDA
   maxsub 5
 end
+  #xc "GGA_X_PBE .75 GGA_C_PBE 1. HF_X .25"
   #xc "GGA_X_PBE .75 EXTERNAL_PARAMETERS {kappa: 0.7, mu: 0.3} GGA_C_PBE 1. EXTERNAL_PARAMETERS {gamma: 0.05, beta: 0.08} HF_X .25"
+  # The external parameters are defined in the source files of each Libxc functional. For the previous input line,
+  # they are defined in src/gga_x_pbe.c and src/gga_c_pbe.c.
 
 # water*1
 geometry

@@ -213,8 +213,6 @@ private:
         return rho;
     }
 
-    void set_external_parameters_if_a_functional_has_been_specified(std::stringstream &line);
-
     void set_external_parameters(std::stringstream &line);
 
     static std::pair<std::vector<std::string>, std::vector<double>> get_external_parameter_name_and_value_pair(
