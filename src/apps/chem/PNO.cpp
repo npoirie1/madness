@@ -2620,14 +2620,21 @@ PNOPairs PNO::load_pnos(PNOPairs& pairs) const {
 	for (ElectronPairIterator it = pit(); it; ++it) {
 		vector_real_function_3d tmp;
 		std::string name = pairs.name(it);
-		try {
-			load_function(world, tmp, name);
-			msg << "Found PNOs for " << name << " with rank " << tmp.size()
-					<< "\n";
-		} catch (...) {
-			msg << "failed to find PNO " << name
-					<< " initialize as zero function\nn";
-		}
+        bool exists = archive::ParallelInputArchive<archive::BinaryFstreamInputArchive>::exists(world, name.c_str());
+        if (exists) {
+            try {
+                load_function(world, tmp, name);
+                msg << "Found PNOs for " << name << " with rank " << tmp.size()
+                    << "\n";
+            } catch (...) {
+                msg << "failed to find PNO " << name
+                    << " initialize as zero function\nn";
+            }
+        }
+        else {
+            msg << "failed to find PNO " << name
+                << " initialize as zero function\nn";
+        }
 		pno_ij[it.ij()] = tmp;
 	}
 	return pairs;
