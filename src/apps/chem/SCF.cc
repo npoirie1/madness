@@ -1718,7 +1718,7 @@ vecfuncT SCF::apply_potential(World & world, const tensorT & occ,
 	enl = 0.0;
 
 	// compute the local DFT potential for the MOs
-	if (xc.is_dft() && !(xc.hf_exchange_coefficient() == 1.0)) {
+	if (xc.is_dft()) {
 		START_TIMER(world);
 
 		XCOperator<double,3> xcoperator(world,this,ispin,param.dft_deriv());
@@ -1739,7 +1739,7 @@ vecfuncT SCF::apply_potential(World & world, const tensorT & occ,
 
 	END_TIMER(world, "V*psi");
 	print_meminfo(world.rank(), "V*psi");
-	if (xc.hf_exchange_coefficient()) {
+	if (xc.hf_exchange_coefficient() && xc.get_hf_yukawa_separation() > 1e-6) {
 		START_TIMER(world);
 		//            vecfuncT Kamo = apply_hf_exchange(world, occ, amo, amo);
 		Exchange<double,3> K=Exchange<double,3>(world,this,ispin).set_symmetric(true);
@@ -1753,8 +1753,27 @@ vecfuncT SCF::apply_potential(World & world, const tensorT & occ,
 			exchf *= 2.0;
 		gaxpy(world, 1.0, Vpsi, -xc.hf_exchange_coefficient(), Kamo);
 		Kamo.clear();
-		END_TIMER(world, "HF exchange");
+
 		exc = exchf * xc.hf_exchange_coefficient() + exc;
+
+        const double yukawa_separation_parameter = xc.get_hf_yukawa_separation();
+        if (yukawa_separation_parameter < 1e8) {
+            Exchange<double,3> K_long_range=
+                    Exchange<double,3>(world,this,ispin, yukawa_separation_parameter).set_symmetric(true);
+            vecfuncT K_long_range_amo=K_long_range(amo);
+            tensorT excv_long_range = inner(world, K_long_range_amo, amo);
+            double exchf_long_range = 0.0;
+            for (long i = 0; i < amo.size(); ++i) {
+                exchf_long_range += 0.5 * excv_long_range[i] * occ[i];
+            }
+            if (!xc.is_spin_polarized())
+                exchf_long_range *= 2.0;
+            gaxpy(world, 1.0, Vpsi, xc.hf_exchange_coefficient(), K_long_range_amo);
+            K_long_range_amo.clear();
+
+            exc = exchf_long_range * xc.hf_exchange_coefficient() + exc;
+        }
+        END_TIMER(world, "HF exchange");
 	}
 	// need to come back to this for psp - when is this used?
 	if (param.pure_ae()){
