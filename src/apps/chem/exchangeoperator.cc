@@ -11,8 +11,8 @@ namespace madness {
 
 
 template<typename T, std::size_t NDIM>
-Exchange<T, NDIM>::ExchangeImpl::ExchangeImpl(World& world, const SCF *calc, const int ispin)
-        : world(world), symmetric_(false), lo(calc->param.lo()) {
+Exchange<T, NDIM>::ExchangeImpl::ExchangeImpl(World& world, const SCF *calc, const int ispin, const double mu)
+        : world(world), symmetric_(false), lo(calc->param.lo()), mu(mu) {
     if (ispin == 0) { // alpha spin
         mo_ket = convert<double, T, NDIM>(world, calc->amo);        // deep copy necessary if T==double_complex
     } else if (ispin == 1) {  // beta spin
@@ -23,8 +23,8 @@ Exchange<T, NDIM>::ExchangeImpl::ExchangeImpl(World& world, const SCF *calc, con
 
 template<typename T, std::size_t NDIM>
 Exchange<T, NDIM>::ExchangeImpl::ExchangeImpl(World& world, const Nemo *nemo,
-                            const int ispin) // @suppress("Class members should be properly initialized")
-        : ExchangeImpl(world, nemo->get_calc().get(), ispin) {
+                            const int ispin, const double mu) // @suppress("Class members should be properly initialized")
+        : ExchangeImpl(world, nemo->get_calc().get(), ispin, mu) {
 
     if (ispin == 0) { // alpha spin
         mo_ket = convert<double, T, NDIM>(world,
@@ -92,7 +92,7 @@ Exchange<T, NDIM>::ExchangeImpl::K_macrotask_efficient(const vecfuncT& vf, const
 
     // the result is a vector of functions living in the universe
     const long nresult = vf.size();
-    MacroTaskExchangeSimple xtask(nresult, lo, mul_tol, is_symmetric());
+    MacroTaskExchangeSimple xtask(nresult, mu, lo, mul_tol, is_symmetric());
     vecfuncT Kf;
 
     // deferred execution if a taskq is provided by the user
@@ -119,12 +119,12 @@ std::vector<Function<T, NDIM> > Exchange<T, NDIM>::ExchangeImpl::K_small_memory(
     const long nocc = mo_ket.size();
     const long nf = vket.size();
     vecfuncT Kf = zero_functions_compressed<T, NDIM>(world, nf);
-    auto poisson = set_poisson(world, lo);
+    auto yukawa = set_yukawa(world, mu, lo);
 
     for (int i = 0; i < nocc; ++i) {
         vecfuncT psif = mul_sparse(world, mo_bra[i], vket, mul_tol); /// was vtol
         truncate(world, psif);
-        psif = apply(world, *poisson.get(), psif);
+        psif = apply(world, *yukawa.get(), psif);
         truncate(world, psif);
         psif = mul_sparse(world, mo_ket[i], psif, mul_tol); /// was vtol
         gaxpy(world, 1.0, Kf, 1.0, psif);
@@ -137,8 +137,8 @@ template<typename T, std::size_t NDIM>
 std::vector<Function<T, NDIM> > Exchange<T, NDIM>::ExchangeImpl::K_large_memory(const vecfuncT& vket,
                                                                   const double mul_tol) const {    // Larger memory algorithm ... use i-j sym if psi==f
 
-    auto poisson = set_poisson(world, lo);
-    vecfuncT result = compute_K_tile(world, mo_bra, mo_ket, vket, poisson, is_symmetric(), mul_tol);
+    auto yukawa = set_yukawa(world, mu, lo);
+    vecfuncT result = compute_K_tile(world, mo_bra, mo_ket, vket, yukawa, is_symmetric(), mul_tol);
     truncate(world, result);
     return result;
 }
@@ -234,8 +234,8 @@ Exchange<T, NDIM>::ExchangeImpl::MacroTaskExchangeSimple::compute_offdiagonal_ba
     mul1_timer += long((cpu1 - cpu0) * 1000l);
 
     cpu0 = cpu_time();
-    auto poisson = set_poisson(subworld, lo);
-    vecfuncT Nij = apply(subworld, *poisson.get(), orbital_product_flat);
+    auto yukawa = set_yukawa(subworld, mu, lo);
+    vecfuncT Nij = apply(subworld, *yukawa.get(), orbital_product_flat);
     truncate(subworld, Nij);
     cpu1 = cpu_time();
     apply_timer += long((cpu1 - cpu0) * 1000l);

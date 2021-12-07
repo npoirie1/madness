@@ -66,6 +66,13 @@ public:
 		return fit;
 	}
 
+    /// return a fit for the Yukawa potential, f(r) = exp(-\mu r)/r
+    static GFit YukawaFit(double mu, double lo, double hi, double eps, bool prnt=false) {
+        GFit fit=BSHFit(mu,lo,hi,eps/(4.0*constants::pi),prnt);
+        fit.coeffs_.scale(4.0*constants::pi);
+        return fit;
+    }
+
 	/// return a fit for the bound-state Helmholtz function
 
 	/// the BSH function is defined by

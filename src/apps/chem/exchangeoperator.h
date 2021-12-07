@@ -53,25 +53,27 @@ public:
     ExchangeImpl(World& world) : world(world) {}
 
     /// ctor with a conventional calculation
-    ExchangeImpl(World& world, const SCF *calc, const int ispin) ;
+    ExchangeImpl(World& world, const SCF *calc, int ispin, double mu = 0.0) ;
 
     /// ctor with a nemo calculation
-    ExchangeImpl(World& world, const Nemo *nemo, const int ispin);
+    ExchangeImpl(World& world, const Nemo *nemo, int ispin, double mu = 0.0);
 
     /// set the bra and ket orbital spaces, and the occupation
 
     /// @param[in]	bra		bra space, must be provided as complex conjugate
     /// @param[in]	ket		ket space
-    void set_parameters(const vecfuncT& bra, const vecfuncT& ket, const double lo1) {
+    void set_parameters(const vecfuncT& bra, const vecfuncT& ket, const double lo1, const double mu1 = 0.0) {
         mo_bra = copy(world, bra);
         mo_ket = copy(world, ket);
         lo = lo1;
+        mu = mu1;
     }
 
     std::string info() const {return "K";}
 
-    static auto set_poisson(World& world, const double lo, const double econv = FunctionDefaults<3>::get_thresh()) {
-        return std::shared_ptr<real_convolution_3d>(CoulombOperatorPtr(world, lo, econv));
+    static auto set_yukawa(World& world, const double mu, const double lo,
+                           const double econv = FunctionDefaults<3>::get_thresh()) {
+        return std::shared_ptr<real_convolution_3d>(YukawaOperatorPtr(world, mu, lo, econv));
     }
 
     /// apply the exchange operator on a vector of functions
@@ -128,6 +130,7 @@ private:
     bool symmetric_ = false;      /// is the exchange matrix symmetric? K phi_i = \sum_k \phi_k \int \phi_k \phi_i
     vecfuncT mo_bra, mo_ket;    ///< MOs for bra and ket
     double lo = 1.e-4;
+    double mu = 0.0;
     long printlevel = 0;
     double mul_tol = 0.0;
 
@@ -135,6 +138,7 @@ private:
 
         long nresult;
         double lo = 1.e-4;
+        double mu = 0.0;
         double mul_tol = 1.e-7;
         bool symmetric = false;
 
@@ -186,8 +190,9 @@ private:
         };
 
     public:
-        MacroTaskExchangeSimple(const long nresult, const double lo, const double mul_tol, const bool symmetric)
-                : nresult(nresult), lo(lo), mul_tol(mul_tol), symmetric(symmetric) {
+        MacroTaskExchangeSimple(const long nresult, const double mu,
+                                const double lo, const double mul_tol, const bool symmetric)
+                : nresult(nresult), mu(mu), lo(lo), mul_tol(mul_tol), symmetric(symmetric) {
             partitioner.reset(new MacroTaskPartitionerExchange(symmetric));
         }
 
@@ -264,9 +269,9 @@ private:
         ) const {
             double mul_tol = 0.0;
             double symmetric = true;
-            auto poisson = Exchange<double, 3>::ExchangeImpl::set_poisson(subworld, lo);
-            return Exchange<T, NDIM>::ExchangeImpl::compute_K_tile(subworld, bra_batch, ket_batch, vf_batch, poisson, symmetric,
-                                                     mul_tol);
+            auto yukawa = Exchange<double, 3>::ExchangeImpl::set_yukawa(subworld, mu, lo);
+            return Exchange<T, NDIM>::ExchangeImpl::compute_K_tile(subworld, bra_batch, ket_batch, vf_batch, yukawa, symmetric,
+                                                                   mul_tol);
         }
 
         /// compute a batch of the exchange matrix, with non-identical ranges
@@ -282,9 +287,9 @@ private:
                                                     const vecfuncT& vf_batch) const {
             double mul_tol = 0.0;
             double symmetric = false;
-            auto poisson = Exchange<double, 3>::ExchangeImpl::set_poisson(subworld, lo);
-            return Exchange<T, NDIM>::ExchangeImpl::compute_K_tile(subworld, bra_batch, ket_batch, vf_batch, poisson, symmetric,
-                                                     mul_tol);
+            auto yukawa = Exchange<double, 3>::ExchangeImpl::set_yukawa(subworld, mu, lo);
+            return Exchange<T, NDIM>::ExchangeImpl::compute_K_tile(subworld, bra_batch, ket_batch, vf_batch, yukawa, symmetric,
+                                                                   mul_tol);
         }
 
         /// compute a batch of the exchange matrix, with non-identical ranges

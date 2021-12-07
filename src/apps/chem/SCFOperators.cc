@@ -664,11 +664,13 @@ void XCOperator<T, NDIM>::prep_xc_args_response(const real_function_3d &dens_pt,
 
 /// ctor with a conventional calculation
 template<typename T, std::size_t NDIM>
-Exchange<T,NDIM>::Exchange(World& world, const SCF *calc, const int ispin) : impl(new Exchange<T,NDIM>::ExchangeImpl(world,calc,ispin)) {};
+Exchange<T,NDIM>::Exchange(World& world, const SCF *calc, const int ispin, const double mu)
+        : impl(new Exchange<T,NDIM>::ExchangeImpl(world,calc,ispin,mu)) {}
 
 /// ctor with a nemo calculation
 template<typename T, std::size_t NDIM>
-Exchange<T,NDIM>::Exchange(World& world, const Nemo *nemo, const int ispin) : impl(new Exchange<T,NDIM>::ExchangeImpl(world,nemo,ispin)) {};
+Exchange<T,NDIM>::Exchange(World& world, const Nemo *nemo, const int ispin, const double mu)
+        : impl(new Exchange<T,NDIM>::ExchangeImpl(world,nemo,ispin, mu)) {}
 
 /// apply the exchange operator on a vector of functions
 
@@ -682,12 +684,13 @@ std::vector<Function<T,NDIM>> Exchange<T,NDIM>::operator()(const std::vector<Fun
 };
 
 template<typename T, std::size_t NDIM>
-Exchange<T,NDIM>& Exchange<T,NDIM>::set_parameters(const vecfuncT& bra, const vecfuncT& ket, const double lo1) {
+Exchange<T,NDIM>& Exchange<T,NDIM>::set_parameters(const vecfuncT& bra, const vecfuncT& ket, const double lo1,
+                                                   const double mu1) {
     if (not impl) {
         World& world=bra.front().world();
         impl.reset(new Exchange<T,NDIM>::ExchangeImpl(world));
     }
-    impl->set_parameters(bra,ket,lo1);
+    impl->set_parameters(bra,ket,lo1,mu1);
     return *this;
 }
 

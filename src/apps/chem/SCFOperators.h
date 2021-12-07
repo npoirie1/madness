@@ -122,10 +122,10 @@ public:
     Exchange(std::shared_ptr<MacroTaskQ> taskq) : SCFOperatorBase<T, NDIM>(taskq) {}
 
     /// ctor with a conventional calculation
-    Exchange(World& world, const SCF *calc, const int ispin);
+    Exchange(World& world, const SCF *calc, int ispin, double mu = 0.0);
 
     /// ctor with a nemo calculation
-    Exchange(World& world, const Nemo *nemo, const int ispin);
+    Exchange(World& world, const Nemo *nemo, int ispin, double mu = 0.0);
 
     std::string info() const {return "K";}
 
@@ -142,7 +142,7 @@ public:
         return *this;
     }
 
-    Exchange& set_parameters(const vecfuncT& bra, const vecfuncT& ket, const double lo1);
+    Exchange& set_parameters(const vecfuncT& bra, const vecfuncT& ket, const double lo1, const double mu1 = 0.0);
 
     Function<T, NDIM> operator()(const Function<T, NDIM>& ket) const {
         vecfuncT vket(1, ket);
