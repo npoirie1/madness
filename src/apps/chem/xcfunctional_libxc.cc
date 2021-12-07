@@ -60,6 +60,7 @@ XCfunctional::XCfunctional() : hf_coeff(0.0) {
     ggatol=1.e-4;
     nderiv=0;
     spin_polarized=false;
+    hf_yukawa_separation = 1e9;
 }
 
 void XCfunctional::initialize(const std::string& input_line, bool polarized,
@@ -77,6 +78,7 @@ void XCfunctional::initialize(const std::string& input_line, bool polarized,
 
     nderiv = 0;
     hf_coeff = 0.0;
+    hf_yukawa_separation = 1e9;
     funcs.clear();
 
     if (printit) print("\nConstruct XC Functional from LIBXC Library");
@@ -107,6 +109,8 @@ void XCfunctional::initialize(const std::string& input_line, bool polarized,
             line >> rhotol;
         } else if (name == "GGATOL") {
             line >> ggatol;
+        } else if (name == "YUKAWA_SEPARATION") {
+            line >> hf_yukawa_separation;
         } else if (name == "EXTERNAL_PARAMETERS") {
             /* EXTERNAL_PARAMETERS are functional specific parameters which can be set in Libxc.
              * In each Libxc functional file (e.g. src/gga_x_pbe.c), there are lines that look as follows:

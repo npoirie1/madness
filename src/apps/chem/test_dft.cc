@@ -32,6 +32,7 @@
 //#define WORLD_INSTANTIATE_STATIC_TEMPLATES
 #include <madness.h>
 #include <chem/SCFOperators.h>
+#include <chem/xcfunctional.h>
 
 using namespace madness;
 
@@ -106,6 +107,37 @@ int test_slater_exchange(World& world) {
 
     return 0;
 
+}
+
+int test_get_hf_yukawa_separation(World& world) {
+
+    const bool spin_polarized=false;
+    const std::string default_xc_data =
+            "GGA_X_ITYH_PBE .75 EXTERNAL_PARAMETERS {OMEGA: 0.2, kappa: 1.2} GGA_C_PBE 1. HF_X .25";
+    XCfunctional default_xc;
+    default_xc.initialize(default_xc_data, spin_polarized, world);
+
+    const double default_yukawa_separation = default_xc.get_hf_yukawa_separation();
+    print("default_yukawa_separation:", default_yukawa_separation);
+
+    const double expected_default_yukawa_separation = 1e9;
+    const double default_error = default_yukawa_separation-expected_default_yukawa_separation;
+    const double thresh = 1e-6;
+    int result=0;
+    if (check_err(default_error,thresh,"Default Yukawa separation error")) result+=1;
+
+    const std::string xc_data =
+            "GGA_X_ITYH_PBE .75 EXTERNAL_PARAMETERS {kappa: 1.2, _omega: 200} GGA_C_PBE 1. HF_X .25 YUKAWA_SEPARATION 0.7";
+    XCfunctional xc;
+    xc.initialize(xc_data, spin_polarized, world);
+
+    const double yukawa_separation = xc.get_hf_yukawa_separation();
+    print("yukawa_separation:", yukawa_separation);
+
+    const double expected_yukawa_separation = 0.7;
+    const double error = yukawa_separation-expected_yukawa_separation;
+    if (check_err(error,thresh,"Yukawa separation error")) result+=1;
+    return result;
 }
 
 int test_external_parameters(World& world) {
@@ -215,6 +247,7 @@ int main(int argc, char** argv) {
     int result=0;
 
     result += test_slater_exchange(world);
+    result += test_get_hf_yukawa_separation(world);
     result += test_external_parameters(world);
     result += test_throw_if_external_parameters_are_specified_before_functionals(world);
     result += test_throw_if_external_parameters_missing_opening_brace(world);

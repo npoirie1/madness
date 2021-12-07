@@ -97,6 +97,7 @@ protected:
 
     bool spin_polarized;        ///< True if the functional is spin polarized
     double hf_coeff;            ///< Factor multiplying HF exchange (+1.0 gives HF)
+    double hf_yukawa_separation; ///< Range-separation parameter for the
     double rhomin, rhotol;      ///< See initialize and munge*
     double ggatol;              ///< See initialize and munge*
 
@@ -281,6 +282,12 @@ public:
     double hf_exchange_coefficient() const
     {
         return hf_coeff;
+    }
+
+    /// Returns the value of the Yukawa range-separation parameter for HF exchange
+    double get_hf_yukawa_separation() const
+    {
+        return hf_yukawa_separation;
     }
 
     /// Computes the energy functional at given points

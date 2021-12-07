@@ -17,12 +17,12 @@ int x_uks_s__(double *ra, double *rb, double *f, double *dfdra, double *dfdrb);
 int c_uks_vwn5__(double *ra, double *rb, double *f, double *dfdra, double *dfdrb);
 
 XCfunctional::XCfunctional() : hf_coeff(0.0) {
-    rhotol=1e-7; rhomin=1e-12; // default values
+    rhotol=1e-7; rhomin=1e-12; hf_yukawa_separation = 1e9; // default values
 }
 
 void XCfunctional::initialize(const std::string& input_line, bool polarized,
         World& world, bool verbose) {
-    rhotol=1e-7; rhomin=1e-12; // default values
+    rhotol=1e-7; rhomin=1e-12; hf_yukawa_separation = 1e9; // default values
 
     spin_polarized = polarized;
 
@@ -40,6 +40,9 @@ void XCfunctional::initialize(const std::string& input_line, bool polarized,
         }
         else if (token == "RHOTOL") {
             s >> rhotol;
+        }
+        else if (name == "YUKAWA_SEPARATION") {
+            line >> hf_yukawa_separation;
         }
         else if (token == "HF") {
             hf_coeff = 1.0;
