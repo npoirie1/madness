@@ -1757,7 +1757,7 @@ vecfuncT SCF::apply_potential(World & world, const tensorT & occ,
 		exc = exchf * xc.hf_exchange_coefficient() + exc;
 
         const double yukawa_separation_parameter = xc.get_hf_yukawa_separation();
-        if (yukawa_separation_parameter < 1e8) {
+        if (yukawa_separation_parameter < 1e4) {
             Exchange<double,3> K_long_range=
                     Exchange<double,3>(world,this,ispin, yukawa_separation_parameter).set_symmetric(true);
             vecfuncT K_long_range_amo=K_long_range(amo);
