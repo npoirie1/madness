@@ -247,6 +247,10 @@ std::shared_ptr<Fock<double,3>> Nemo::make_fock_operator() const {
     MADNESS_CHECK(param.spin_restricted());
     const int ispin=0;
 
+    if (calc->xc.get_hf_yukawa_separation() < 1e4) {
+        throw std::invalid_argument("make_fock_operator cannot yet handle range separation parameters less than 1e4!");
+    }
+
     std::shared_ptr<Fock<double,3> > fock(new Fock<double,3>(world));
     Coulomb<double,3> J(world,this);
     fock->add_operator("J",std::make_shared<Coulomb<double,3> >(J));
@@ -573,6 +577,10 @@ void Nemo::compute_nemo_potentials(const vecfuncT& nemo, vecfuncT& psi,
 		vecfuncT& Unemo) const {
 
     {
+        if (calc->xc.get_hf_yukawa_separation() < 1e4) {
+            throw std::invalid_argument("solve_cphf cannot yet handle range separation parameters less than 1e4!");
+        }
+
         timer t(world);
         real_function_3d vcoul;
         int ispin = 0;
@@ -1202,6 +1210,10 @@ vecfuncT Nemo::solve_cphf(const size_t iatom, const int iaxis, const Tensor<doub
         const SCFProtocol& proto, const std::string& xc_data) const {
 
     print("\nsolving nemo cphf equations for atom, axis",iatom,iaxis);
+
+    if (calc->xc.get_hf_yukawa_separation() < 1e4) {
+        throw std::invalid_argument("solve_cphf cannot yet handle range separation parameters less than 1e4!");
+    }
 
     vecfuncT xi=guess;
     // guess for the perturbed MOs
