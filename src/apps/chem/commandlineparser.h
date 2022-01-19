@@ -5,7 +5,10 @@
 #ifndef MADNESS_COMMANDLINEPARSER_H
 #define MADNESS_COMMANDLINEPARSER_H
 
-#include<map>
+#include <algorithm>
+#include <map>
+#include <sstream>
+#include <vector>
 namespace madness {
 /// very simple command line parser
 
