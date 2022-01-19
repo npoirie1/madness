@@ -247,18 +247,21 @@ std::shared_ptr<Fock<double,3>> Nemo::make_fock_operator() const {
     MADNESS_CHECK(param.spin_restricted());
     const int ispin=0;
 
-    if (calc->xc.get_hf_yukawa_separation() < 1e4) {
-        throw std::invalid_argument("make_fock_operator cannot yet handle range separation parameters less than 1e4!");
-    }
-
     std::shared_ptr<Fock<double,3> > fock(new Fock<double,3>(world));
     Coulomb<double,3> J(world,this);
     fock->add_operator("J",std::make_shared<Coulomb<double,3> >(J));
     fock->add_operator("V",std::make_shared<Nuclear<double,3> >(world,this));
     fock->add_operator("T",std::make_shared<Kinetic<double,3> >(world));
-    if (calc->xc.hf_exchange_coefficient()>0.0) {
+    const double yukawa_separation = calc->xc.get_hf_yukawa_separation();
+    if (calc->xc.hf_exchange_coefficient()>0.0 && yukawa_separation > 1e-6) {
         Exchange<double,3> K=Exchange<double,3>(world,this,ispin).set_symmetric(false);
         fock->add_operator("K",{-1.0,std::make_shared<Exchange<double,3>>(K)});
+
+        if (yukawa_separation < 1e4) {
+            Exchange<double,3> K_short_range =
+                    Exchange<double,3>(world,this,ispin, yukawa_separation).set_symmetric(false);
+            fock->add_operator("K_short_range",{1.0,std::make_shared<Exchange<double,3>>(K_short_range)});
+        }
     }
     if (calc->xc.is_dft()) {
         XCOperator<double,3> xcoperator(world,this,ispin);

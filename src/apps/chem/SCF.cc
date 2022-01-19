@@ -1758,20 +1758,20 @@ vecfuncT SCF::apply_potential(World & world, const tensorT & occ,
 
         const double yukawa_separation_parameter = xc.get_hf_yukawa_separation();
         if (yukawa_separation_parameter < 1e4) {
-            Exchange<double,3> K_long_range=
+            Exchange<double,3> K_short_range=
                     Exchange<double,3>(world,this,ispin, yukawa_separation_parameter).set_symmetric(true);
-            vecfuncT K_long_range_amo=K_long_range(amo);
-            tensorT excv_long_range = inner(world, K_long_range_amo, amo);
-            double exchf_long_range = 0.0;
+            vecfuncT K_short_range_amo=K_short_range(amo);
+            tensorT excv_short_range = inner(world, K_short_range_amo, amo);
+            double exchf_short_range = 0.0;
             for (long i = 0; i < amo.size(); ++i) {
-                exchf_long_range += 0.5 * excv_long_range[i] * occ[i];
+                exchf_short_range += 0.5 * excv_short_range[i] * occ[i];
             }
             if (!xc.is_spin_polarized())
-                exchf_long_range *= 2.0;
-            gaxpy(world, 1.0, Vpsi, xc.hf_exchange_coefficient(), K_long_range_amo);
-            K_long_range_amo.clear();
+                exchf_short_range *= 2.0;
+            gaxpy(world, 1.0, Vpsi, xc.hf_exchange_coefficient(), K_short_range_amo);
+            K_short_range_amo.clear();
 
-            exc = exchf_long_range * xc.hf_exchange_coefficient() + exc;
+            exc = exchf_short_range * xc.hf_exchange_coefficient() + exc;
         }
         END_TIMER(world, "HF exchange");
 	}
