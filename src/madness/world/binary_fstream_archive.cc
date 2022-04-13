@@ -79,7 +79,8 @@ namespace madness {
         void BinaryFstreamInputArchive::open(const char* filename,  std::ios_base::openmode mode) {
             iobuf.reset(new char[IOBUFSIZE], std::default_delete<char[]>() );
             is.open(filename, mode);
-            if (!is) MADNESS_EXCEPTION("BinaryFstreamInputArchive: open: failed", 1);
+            std::string error_message = "BinaryFstreamInputArchive: open: failed, filename: " + std::string(filename);
+            if (!is) MADNESS_EXCEPTION(error_message.c_str(), 1);
             is.rdbuf()->pubsetbuf(iobuf.get(), IOBUFSIZE);
             char cookie[255];
             int n = strlen(ARCHIVE_COOKIE)+1;

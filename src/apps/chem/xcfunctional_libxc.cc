@@ -335,9 +335,9 @@ void XCfunctional::make_libxc_args(const std::vector< madness::Tensor<double> >&
             const double * MADNESS_RESTRICT zetaa_y = xc_args[enum_zetaa_y].ptr();
             const double * MADNESS_RESTRICT zetaa_z = xc_args[enum_zetaa_z].ptr();
 
-            const double * MADNESS_RESTRICT zetab_x = xc_args[enum_zetaa_x].ptr();
-            const double * MADNESS_RESTRICT zetab_y = xc_args[enum_zetaa_y].ptr();
-            const double * MADNESS_RESTRICT zetab_z = xc_args[enum_zetaa_z].ptr();
+            const double * MADNESS_RESTRICT zetab_x = xc_args[enum_zetab_x].ptr();
+            const double * MADNESS_RESTRICT zetab_y = xc_args[enum_zetab_y].ptr();
+            const double * MADNESS_RESTRICT zetab_z = xc_args[enum_zetab_z].ptr();
 
             // might happen if there are no beta electrons
             madness::Tensor<double> dummy;
