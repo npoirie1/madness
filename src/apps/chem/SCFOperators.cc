@@ -358,6 +358,19 @@ XCOperator<T, NDIM>::XCOperator(World &world, std::string xc_data, const bool sp
 }
 
 template<typename T, std::size_t NDIM>
+XCOperator<T, NDIM>::XCOperator(World &world, const std::string &xc_data, const real_function_3d &electron_density,
+                                const real_function_3d &electron_pair_density, std::string deriv)
+        : world{world}, dft_deriv{std::move(deriv)}, nbeta{0}, ispin{0},
+          extra_truncation{FunctionDefaults<3>::get_thresh() * 0.01} {
+
+        nbeta = (electron_density.norm2() > 0.0)/2;
+        xc = std::make_shared<XCfunctional>();
+        const bool spin_polarized = true;
+        xc->initialize(xc_data, spin_polarized, world);
+        xc_args = prep_auxiliary_spin_xc_args(electron_density, electron_pair_density);
+}
+
+template<typename T, std::size_t NDIM>
 XCOperator<T, NDIM>::XCOperator(World &world, const SCF *calc, int ispin, std::string deriv)
         : world(world), dft_deriv(deriv), ispin(ispin), extra_truncation(FunctionDefaults<3>::get_thresh() * 0.01) {
     xc = std::shared_ptr<XCfunctional>(new XCfunctional());
@@ -608,6 +621,19 @@ vecfuncT XCOperator<T, NDIM>::prep_xc_args(const real_function_3d &arho,
 
     world.gop.fence();
     truncate(world, xc_args, extra_truncation);
+    return xcargs;
+}
+
+/// prepare xc args for auxiliary spin densities
+template<typename T, std::size_t NDIM>
+vecfuncT XCOperator<T, NDIM>::prep_auxiliary_spin_xc_args(const real_function_3d &density,
+                                                          const real_function_3d &pair_density) const {
+    vecfuncT xcargs(XCfunctional::number_xc_args);
+    real_function_3d sqrt_input = density*density-4*pair_density;
+    real_function_3d sqrt_output = unary_op(sqrt_input, piecewise_sqrt_operator());
+    real_function_3d alpha_density = .5*(density+sqrt_output);
+    real_function_3d beta_density = .5*(density-sqrt_output);
+
     return xcargs;
 }
 

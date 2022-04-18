@@ -640,6 +640,10 @@ public:
             const real_function_3d& arho, const real_function_3d& brho,
             std::string deriv="abgv");
 
+    /// custom ctor for auxiliary spin densities with information about the XC functional
+    XCOperator(World& world, const std::string &xc_data, const real_function_3d& electron_density,
+               const real_function_3d& electron_pair_density, std::string deriv="abgv");
+
     /// ctor with an SCF calculation, will initialize the necessary intermediates
     XCOperator(World& world, const SCF* scf, int ispin=0, std::string deriv="abgv");
 
@@ -745,6 +749,13 @@ private:
 
     /// compute the intermediates for the XC functionals
 
+    /// @param[in]  density    total electron density
+    /// @param[in]  pair_density    on-top electron pair density with prefactor N(N-1)/2
+    /// @return xc_args vector of intermediates as described above
+    vecfuncT prep_auxiliary_spin_xc_args(const real_function_3d& density, const real_function_3d& pair_density) const;
+
+    /// compute the intermediates for the XC functionals
+
     /// @param[in]  dens_pt     perturbed densities from CPHF or TDDFT equations
     /// @param[in,out] xc_args   vector of intermediates as described above
     /// @param[out] ddens_pt    xyz-derivatives of dens_pt
@@ -787,6 +798,28 @@ private:
         template <typename Archive>
         void serialize(Archive& ar) {}
 
+    };
+
+    struct piecewise_sqrt_operator{
+        typedef double resultT;
+        struct inner_piecewise_sqrt_operator {
+            double operator()(const double& val) {
+                if (val > 0) {
+                    return sqrt(val);
+                }
+                else {
+                    return 0;
+                }
+            }
+        };
+        Tensor<double> operator()(const Key<3>& key, const Tensor<double>& val) const {
+            Tensor<double> result=copy(val);
+            inner_piecewise_sqrt_operator op;
+            return result.unaryop(op);
+        }
+
+        template <typename Archive>
+        void serialize(Archive& ar) {}
     };
 };
 

@@ -619,6 +619,79 @@ int test_XCOperator(World& world) {
     return 0;
 }
 
+template <typename T>
+class ElectronDensityForTest : public FunctionFunctorInterface<T,3> {
+public:
+    typedef Vector<double,3> coordT;
+
+    ElectronDensityForTest() = default;
+
+    T operator()(const coordT& x) const override {
+        const T radius = sqrt(x[0]*x[0]+x[1]*x[1]+x[2]*x[2]);
+        return 0.0795775* exp(-radius);
+    }
+};
+
+template <typename T>
+class ElectronPairDensityForTest : public FunctionFunctorInterface<T,3> {
+public:
+    typedef Vector<double,3> coordT;
+
+    ElectronPairDensityForTest() = default;
+
+    T operator()(const coordT& x) const override {
+        const T lower_radius = (x[0]-5)*(x[0]-5)+x[1]*x[1]+x[2]*x[2];
+        const T upper_radius = (x[0]+5)*(x[0]+5)+x[1]*x[1]+x[2]*x[2];
+        return (1/(2*std::pow(constants::pi,1.5)))*(exp(-lower_radius)+exp(-upper_radius));
+    }
+};
+
+template<typename T>
+int test_auxiliary_XCOperator(World& world) {
+    FunctionDefaults<3>::set_k(8);
+    FunctionDefaults<3>::set_thresh(1e-8);
+    FunctionDefaults<3>::set_initial_level(5);
+    FunctionDefaults<3>::set_refine(true);
+    FunctionDefaults<3>::set_autorefine(true);
+    FunctionDefaults<3>::set_truncate_mode(1);
+    FunctionDefaults<3>::set_truncate_on_project(false);
+    int success=0;
+
+    double L = 16;
+    FunctionDefaults<3>::set_cubic_cell(-L, L);
+    print("I think the cell volume is ", FunctionDefaults<3>::get_cell_volume());
+    functorT electron_density_functor = std::make_shared<ElectronDensityForTest<T>>();
+    Function<T,3> electron_density_mra = FunctionFactory<T,3>(world).functor(electron_density_functor);
+    electron_density_mra.truncate();
+    electron_density_mra.reconstruct();
+
+    ElectronDensityForTest<T> electron_density;
+    double electron_density_err=electron_density_mra.err(electron_density);
+    if (world.rank()==0) print("Electron density error in 3-dimensions: ", electron_density_err);
+    if (electron_density_err > 3 * FunctionDefaults<3>::get_thresh()) success++;
+
+    const std::string density_filename = "electron_density_plot_4.txt";
+    const int num_points = 101;
+    const Vector<double, 3> start_point{-L,0,0};
+    const Vector<double, 3> end_point{L,0,0};
+    plot_line(world, density_filename.c_str(), num_points, start_point, end_point, electron_density_mra);
+
+    functorT electron_pair_density_functor = std::make_shared<ElectronPairDensityForTest<T>>();
+    Function<T,3> electron_pair_density_mra = FunctionFactory<T,3>(world).functor(electron_pair_density_functor);
+    electron_pair_density_mra.truncate();
+    electron_pair_density_mra.reconstruct();
+
+    ElectronPairDensityForTest<T> electron_pair_density;
+    double electron_pair_density_err=electron_pair_density_mra.err(electron_pair_density);
+    if (world.rank()==0) print("Electron pair density error in 3-dimensions: ", electron_pair_density_err);
+    if (electron_pair_density_err > 5 * FunctionDefaults<3>::get_thresh()) success++;
+
+    const std::string pair_density_filename = "electron_pair_density_plot_4.txt";
+    plot_line(world, pair_density_filename.c_str(), num_points, start_point, end_point, electron_pair_density_mra);
+
+    return success;
+}
+
 int nuclear_anchor_test(World& world) {
     double thresh=FunctionDefaults<3>::get_thresh();
     CalculationParameters param;
@@ -987,6 +1060,7 @@ int main(int argc, char** argv) {
 #ifndef HAVE_GENTENSOR
     	result+=test_XCOperator<double_complex>(world);
 #endif
+        result+= test_auxiliary_XCOperator<double>(world);
     	result+=test_nuclear(world);
     	result+=test_dnuclear(world);
     	result+=test_nemo(world);
