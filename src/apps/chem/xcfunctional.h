@@ -63,6 +63,12 @@ public:
         enum_rhoa=0,            ///< alpha density \f$ \rho_\alpha \f$
         enum_rhob=1,            ///< beta density \f$ \rho_\beta \f$
         enum_rho_pt=2,          ///< perturbed density (CPHF, TDKS) \f$ \rho_{pt} \f$
+        enum_drhoa_x=3,         ///< \f$ \partial/{\partial x} (\rho_a) \f$
+        enum_drhoa_y=4,         ///< \f$ \partial/{\partial y} (\rho_a) \f$
+        enum_drhoa_z=5,         ///< \f$ \partial/{\partial z} (\rho_a) \f$
+        enum_drhob_x=6,         ///< \f$ \partial/{\partial x} (\rho_b) \f$
+        enum_drhob_y=7,         ///< \f$ \partial/{\partial y} (\rho_b) \f$
+        enum_drhob_z=8,         ///< \f$ \partial/{\partial z} (\rho_b) \f$
         enum_saa=10,            ///< \f$ \sigma_{aa} = \nabla \rho_{\alpha}.\nabla \rho_{\alpha} \f$
         enum_sab=11,            ///< \f$ \sigma_{ab} = \nabla \rho_{\alpha}.\nabla \rho_{\beta} \f$
         enum_sbb=12,            ///< \f$ \sigma_{bb} = \nabla \rho_{\beta}.\nabla \rho_{\beta} \f$

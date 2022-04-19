@@ -654,6 +654,12 @@ vecfuncT XCOperator<T, NDIM>::prep_auxiliary_spin_xc_args(const real_function_3d
         vecfuncT alpha_density_gradient = 0.5*density_gradient*(1.0+sqrt_output_over_density);
         vecfuncT beta_density_gradient = 0.5*density_gradient*(1.0-sqrt_output_over_density);
 
+        xc_arguments[XCfunctional::enum_drhoa_x] = alpha_density_gradient[0];
+        xc_arguments[XCfunctional::enum_drhoa_y] = alpha_density_gradient[1];
+        xc_arguments[XCfunctional::enum_drhoa_z] = alpha_density_gradient[2];
+        xc_arguments[XCfunctional::enum_drhob_x] = beta_density_gradient[0];
+        xc_arguments[XCfunctional::enum_drhob_y] = beta_density_gradient[1];
+        xc_arguments[XCfunctional::enum_drhob_z] = beta_density_gradient[2];
         xc_arguments[XCfunctional::enum_saa] = dot(world, alpha_density_gradient, alpha_density_gradient);
         xc_arguments[XCfunctional::enum_sab] = dot(world, alpha_density_gradient, beta_density_gradient);
         xc_arguments[XCfunctional::enum_sbb] = dot(world, beta_density_gradient, beta_density_gradient);

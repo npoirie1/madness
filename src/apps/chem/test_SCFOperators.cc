@@ -692,24 +692,30 @@ int test_auxiliary_XCOperator(World& world) {
     const std::string xc_operator_string = "GGA_X_PBE 1. GGA_C_PBE 1.";
     XCOperator<double, 3> xc_operator{world, xc_operator_string, electron_density_mra, electron_pair_density_mra};
     Function<double,3> alpha_density = xc_operator.get_xc_arg(XCfunctional::enum_rhoa);
-    const std::string alpha_density_filename = "alpha_density.txt";
-    plot_line(world, alpha_density_filename.c_str(), num_points, start_point, end_point, alpha_density);
+    const double tolerance = 1e-5;
+    const double returned_alpha_density_point = alpha_density(Vector<double, 3>{-0.32,0.0,0.0});
+    const double expected_alpha_density_point = 0.05778510385715398;
+    if (abs(returned_alpha_density_point-expected_alpha_density_point) > tolerance) success++;
 
     Function<double,3> beta_density = xc_operator.get_xc_arg(XCfunctional::enum_rhob);
-    const std::string beta_density_filename = "beta_density.txt";
-    plot_line(world, beta_density_filename.c_str(), num_points, start_point, end_point, beta_density);
+    const double returned_beta_density_point = beta_density(Vector<double, 3>{2.24,0.0,0.0});
+    const double expected_beta_density_point = 0.0042358493015320605;
+    if (abs(returned_beta_density_point-expected_beta_density_point) > tolerance) success++;
 
     Function<double,3> sigma_aa = xc_operator.get_xc_arg(XCfunctional::enum_saa);
-    const std::string sigma_aa_filename = "sigma_aa.txt";
-    plot_line(world, sigma_aa_filename.c_str(), num_points, start_point, end_point, sigma_aa);
+    const double returned_sigma_aa_point = sigma_aa(Vector<double, 3>{0.32,0.0,0.0});
+    const double expected_sigma_aa_point = 0.0033391182277820713;
+    if (abs(returned_sigma_aa_point-expected_sigma_aa_point) > tolerance) success++;
 
     Function<double,3> sigma_ab = xc_operator.get_xc_arg(XCfunctional::enum_sab);
-    const std::string sigma_ab_filename = "sigma_ab.txt";
-    plot_line(world, sigma_ab_filename.c_str(), num_points, start_point, end_point, sigma_ab);
+    const double returned_sigma_ab_point = sigma_ab(Vector<double, 3>{-2.24,0.0,0.0});
+    const double expected_sigma_ab_point = 0.00001794241930528971;
+    if (abs(returned_sigma_ab_point-expected_sigma_ab_point) > tolerance) success++;
 
     Function<double,3> sigma_bb = xc_operator.get_xc_arg(XCfunctional::enum_sbb);
-    const std::string sigma_bb_filename = "sigma_bb.txt";
-    plot_line(world, sigma_bb_filename.c_str(), num_points, start_point, end_point, sigma_bb);
+    const double returned_sigma_bb_point = sigma_bb(Vector<double, 3>{2.24,0.0,0.0});
+    const double expected_sigma_bb_point = 0.000017942419305289646;
+    if (abs(returned_sigma_bb_point-expected_sigma_bb_point) > tolerance) success++;
     return success;
 }
 
