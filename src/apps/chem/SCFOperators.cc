@@ -574,6 +574,11 @@ real_function_3d XCOperator<T, NDIM>::apply_xc_kernel(const real_function_3d &de
     return result.truncate();
 }
 
+template<typename T, std::size_t NDIM>
+real_function_3d XCOperator<T, NDIM>::get_xc_arg(int index) const {
+    return xc_args[index];
+}
+
 /// prepare xc args
 template<typename T, std::size_t NDIM>
 vecfuncT XCOperator<T, NDIM>::prep_xc_args(const real_function_3d &arho,
@@ -628,13 +633,15 @@ vecfuncT XCOperator<T, NDIM>::prep_xc_args(const real_function_3d &arho,
 template<typename T, std::size_t NDIM>
 vecfuncT XCOperator<T, NDIM>::prep_auxiliary_spin_xc_args(const real_function_3d &density,
                                                           const real_function_3d &pair_density) const {
-    vecfuncT xcargs(XCfunctional::number_xc_args);
+    vecfuncT xc_arguments(XCfunctional::number_xc_args);
     real_function_3d sqrt_input = density*density-4*pair_density;
     real_function_3d sqrt_output = unary_op(sqrt_input, piecewise_sqrt_operator());
     real_function_3d alpha_density = .5*(density+sqrt_output);
     real_function_3d beta_density = .5*(density-sqrt_output);
+    xc_arguments[XCfunctional::enum_rhoa] = copy(alpha_density.reconstruct());
+    xc_arguments[XCfunctional::enum_rhob] = copy(beta_density.reconstruct());
 
-    return xcargs;
+    return xc_arguments;
 }
 
 /// add intermediates for the response kernels to xc_args

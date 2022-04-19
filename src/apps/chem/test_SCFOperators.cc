@@ -689,6 +689,15 @@ int test_auxiliary_XCOperator(World& world) {
     const std::string pair_density_filename = "electron_pair_density_plot_4.txt";
     plot_line(world, pair_density_filename.c_str(), num_points, start_point, end_point, electron_pair_density_mra);
 
+    const std::string xc_operator_string = "GGA_X_PBE 1. GGA_C_PBE 1.";
+    XCOperator<double, 3> xc_operator{world, xc_operator_string, electron_density_mra, electron_pair_density_mra};
+    Function<double,3> alpha_density = xc_operator.get_xc_arg(XCfunctional::enum_rhoa);
+    const std::string alpha_density_filename = "alpha_density.txt";
+    plot_line(world, alpha_density_filename.c_str(), num_points, start_point, end_point, alpha_density);
+
+    Function<double,3> beta_density = xc_operator.get_xc_arg(XCfunctional::enum_rhob);
+    const std::string beta_density_filename = "beta_density.txt";
+    plot_line(world, beta_density_filename.c_str(), num_points, start_point, end_point, beta_density);
     return success;
 }
 

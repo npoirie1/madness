@@ -632,7 +632,7 @@ class XCOperator : public SCFOperatorBase<T,NDIM> {
 public:
 
     /// default ctor without information about the XC functional
-    XCOperator(World& world) : world(world), nbeta(0), ispin(0),
+    explicit XCOperator(World& world) : world(world), nbeta(0), ispin(0),
         extra_truncation(FunctionDefaults<3>::get_thresh()*0.01) {}
 
     /// custom ctor with information about the XC functional
@@ -701,6 +701,8 @@ public:
     /// @return     kernel * density
     real_function_3d apply_xc_kernel(const real_function_3d& density,
             const vecfuncT grad_dens_pt=vecfuncT()) const;
+
+    real_function_3d get_xc_arg(int index) const;
 
 private:
 
