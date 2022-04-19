@@ -815,8 +815,42 @@ private:
             }
         };
         Tensor<double> operator()(const Key<3>& key, const Tensor<double>& val) const {
-            Tensor<double> result=copy(val);
+            Tensor<double> result = copy(val);
             inner_piecewise_sqrt_operator op;
+            return result.unaryop(op);
+        }
+
+        template <typename Archive>
+        void serialize(Archive& ar) {}
+    };
+
+    struct inverse_operator{
+        typedef double resultT;
+        struct inner_inverse_operator {
+            double operator()(const double& val) {
+                return 1.0/val;
+            }
+        };
+        Tensor<double> operator()(const Key<3>& key, const Tensor<double>& val) const {
+            Tensor<double> result=copy(val);
+            inner_inverse_operator op;
+            return result.unaryop(op);
+        }
+
+        template <typename Archive>
+        void serialize(Archive& ar) {}
+    };
+
+    struct enforce_min_operator{
+        typedef double resultT;
+        struct inner_enforce_min_operator {
+            double operator()(const double& val) {
+                return std::max(val, 1e-14);
+            }
+        };
+        Tensor<double> operator()(const Key<3>& key, const Tensor<double>& val) const {
+            Tensor<double> result=copy(val);
+            inner_enforce_min_operator op;
             return result.unaryop(op);
         }
 

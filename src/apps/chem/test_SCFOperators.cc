@@ -698,6 +698,18 @@ int test_auxiliary_XCOperator(World& world) {
     Function<double,3> beta_density = xc_operator.get_xc_arg(XCfunctional::enum_rhob);
     const std::string beta_density_filename = "beta_density.txt";
     plot_line(world, beta_density_filename.c_str(), num_points, start_point, end_point, beta_density);
+
+    Function<double,3> sigma_aa = xc_operator.get_xc_arg(XCfunctional::enum_saa);
+    const std::string sigma_aa_filename = "sigma_aa.txt";
+    plot_line(world, sigma_aa_filename.c_str(), num_points, start_point, end_point, sigma_aa);
+
+    Function<double,3> sigma_ab = xc_operator.get_xc_arg(XCfunctional::enum_sab);
+    const std::string sigma_ab_filename = "sigma_ab.txt";
+    plot_line(world, sigma_ab_filename.c_str(), num_points, start_point, end_point, sigma_ab);
+
+    Function<double,3> sigma_bb = xc_operator.get_xc_arg(XCfunctional::enum_sbb);
+    const std::string sigma_bb_filename = "sigma_bb.txt";
+    plot_line(world, sigma_bb_filename.c_str(), num_points, start_point, end_point, sigma_bb);
     return success;
 }
 

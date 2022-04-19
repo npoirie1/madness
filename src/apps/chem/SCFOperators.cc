@@ -636,10 +636,28 @@ vecfuncT XCOperator<T, NDIM>::prep_auxiliary_spin_xc_args(const real_function_3d
     vecfuncT xc_arguments(XCfunctional::number_xc_args);
     real_function_3d sqrt_input = density*density-4*pair_density;
     real_function_3d sqrt_output = unary_op(sqrt_input, piecewise_sqrt_operator());
-    real_function_3d alpha_density = .5*(density+sqrt_output);
-    real_function_3d beta_density = .5*(density-sqrt_output);
+    real_function_3d raw_alpha_density = .5*(density+sqrt_output);
+    real_function_3d raw_beta_density = .5*(density-sqrt_output);
+    real_function_3d alpha_density = unary_op(raw_alpha_density, enforce_min_operator());
+    real_function_3d beta_density = unary_op(raw_beta_density, enforce_min_operator());
     xc_arguments[XCfunctional::enum_rhoa] = copy(alpha_density.reconstruct());
     xc_arguments[XCfunctional::enum_rhob] = copy(beta_density.reconstruct());
+    world.gop.fence();
+
+    if (xc->is_gga()) {
+        real_function_3d sqrt_output_over_density = sqrt_output*unary_op(density, inverse_operator());
+        vecfuncT density_gradient;
+        if (dft_deriv == "bspline") density_gradient = grad_bspline_one(density); // b-spline
+        else if (dft_deriv == "ble") density_gradient = grad_ble_one(density);    // BLE
+        else density_gradient = grad(density);
+
+        vecfuncT alpha_density_gradient = 0.5*density_gradient*(1.0+sqrt_output_over_density);
+        vecfuncT beta_density_gradient = 0.5*density_gradient*(1.0-sqrt_output_over_density);
+
+        xc_arguments[XCfunctional::enum_saa] = dot(world, alpha_density_gradient, alpha_density_gradient);
+        xc_arguments[XCfunctional::enum_sab] = dot(world, alpha_density_gradient, beta_density_gradient);
+        xc_arguments[XCfunctional::enum_sbb] = dot(world, beta_density_gradient, beta_density_gradient);
+    }
 
     return xc_arguments;
 }
