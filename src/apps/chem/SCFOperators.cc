@@ -367,6 +367,7 @@ XCOperator<T, NDIM>::XCOperator(World &world, const std::string &xc_data, const 
         xc = std::make_shared<XCfunctional>();
         const bool spin_polarized = true;
         xc->initialize(xc_data, spin_polarized, world);
+        xc->set_use_intermediates(false);
         xc_args = prep_auxiliary_spin_xc_args(electron_density, electron_pair_density);
 }
 
@@ -634,7 +635,7 @@ template<typename T, std::size_t NDIM>
 vecfuncT XCOperator<T, NDIM>::prep_auxiliary_spin_xc_args(const real_function_3d &density,
                                                           const real_function_3d &pair_density) const {
     vecfuncT xc_arguments(XCfunctional::number_xc_args);
-    real_function_3d sqrt_input = density*density-4*pair_density;
+    real_function_3d sqrt_input = density*density-2*pair_density;
     real_function_3d sqrt_output = unary_op(sqrt_input, piecewise_sqrt_operator());
     real_function_3d raw_alpha_density = .5*(density+sqrt_output);
     real_function_3d raw_beta_density = .5*(density-sqrt_output);

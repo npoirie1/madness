@@ -642,7 +642,7 @@ public:
     T operator()(const coordT& x) const override {
         const T lower_radius = (x[0]-5)*(x[0]-5)+x[1]*x[1]+x[2]*x[2];
         const T upper_radius = (x[0]+5)*(x[0]+5)+x[1]*x[1]+x[2]*x[2];
-        return (1/(2*std::pow(constants::pi,1.5)))*(exp(-lower_radius)+exp(-upper_radius));
+        return (1/(std::pow(constants::pi,1.5)))*(exp(-lower_radius)+exp(-upper_radius));
     }
 };
 
@@ -670,12 +670,6 @@ int test_auxiliary_XCOperator(World& world) {
     if (world.rank()==0) print("Electron density error in 3-dimensions: ", electron_density_err);
     if (electron_density_err > 3 * FunctionDefaults<3>::get_thresh()) success++;
 
-    const std::string density_filename = "electron_density_plot_4.txt";
-    const int num_points = 101;
-    const Vector<double, 3> start_point{-L,0,0};
-    const Vector<double, 3> end_point{L,0,0};
-    plot_line(world, density_filename.c_str(), num_points, start_point, end_point, electron_density_mra);
-
     functorT electron_pair_density_functor = std::make_shared<ElectronPairDensityForTest<T>>();
     Function<T,3> electron_pair_density_mra = FunctionFactory<T,3>(world).functor(electron_pair_density_functor);
     electron_pair_density_mra.truncate();
@@ -684,10 +678,7 @@ int test_auxiliary_XCOperator(World& world) {
     ElectronPairDensityForTest<T> electron_pair_density;
     double electron_pair_density_err=electron_pair_density_mra.err(electron_pair_density);
     if (world.rank()==0) print("Electron pair density error in 3-dimensions: ", electron_pair_density_err);
-    if (electron_pair_density_err > 5 * FunctionDefaults<3>::get_thresh()) success++;
-
-    const std::string pair_density_filename = "electron_pair_density_plot_4.txt";
-    plot_line(world, pair_density_filename.c_str(), num_points, start_point, end_point, electron_pair_density_mra);
+    if (electron_pair_density_err > 7 * FunctionDefaults<3>::get_thresh()) success++;
 
     const std::string xc_operator_string = "GGA_X_PBE 1. GGA_C_PBE 1.";
     XCOperator<double, 3> xc_operator{world, xc_operator_string, electron_density_mra, electron_pair_density_mra};
@@ -716,6 +707,11 @@ int test_auxiliary_XCOperator(World& world) {
     const double returned_sigma_bb_point = sigma_bb(Vector<double, 3>{2.24,0.0,0.0});
     const double expected_sigma_bb_point = 0.000017942419305289646;
     if (abs(returned_sigma_bb_point-expected_sigma_bb_point) > tolerance) success++;
+
+    const double xc_energy = xc_operator.compute_xc_energy();
+    const double expected_energy = -3.820916e-01;
+    const double energy_threshold = 1e-3;
+    if (abs(xc_energy-expected_energy)>energy_threshold) success++;
     return success;
 }
 

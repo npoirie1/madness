@@ -752,7 +752,7 @@ private:
     /// compute the intermediates for the XC functionals
 
     /// @param[in]  density    total electron density
-    /// @param[in]  pair_density    on-top electron pair density with prefactor N(N-1)/2
+    /// @param[in]  pair_density    on-top electron pair density with prefactor N(N-1)
     /// @return xc_args vector of intermediates as described above
     vecfuncT prep_auxiliary_spin_xc_args(const real_function_3d& density, const real_function_3d& pair_density) const;
 

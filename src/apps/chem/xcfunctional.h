@@ -106,6 +106,7 @@ protected:
     double hf_yukawa_separation; ///< Range-separation parameter for the
     double rhomin, rhotol;      ///< See initialize and munge*
     double ggatol;              ///< See initialize and munge*
+    bool use_intermediates = true; ///< Whether to use intermediates such as chi and zeta
 
 #ifdef MADNESS_HAS_LIBXC
     std::vector< std::pair<xc_func_type*,double> > funcs;
@@ -294,6 +295,11 @@ public:
     double get_hf_yukawa_separation() const
     {
         return hf_yukawa_separation;
+    }
+
+    /// Sets whether the intermediates (e.g. chi, zeta) are used
+    void set_use_intermediates(bool use_intermediates) {
+        this->use_intermediates = use_intermediates;
     }
 
     /// Computes the energy functional at given points

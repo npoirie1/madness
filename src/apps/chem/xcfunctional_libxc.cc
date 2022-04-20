@@ -211,6 +211,9 @@ void XCfunctional::make_libxc_args(const std::vector< madness::Tensor<double> >&
 
 
     if (not spin_polarized) {
+        if (!use_intermediates) {
+            MADNESS_EXCEPTION("XCfunctional must be spin polarized when the intermediates are not used!",1);
+        }
         if (is_lda()) {
             rho  = madness::Tensor<double>(np);
             const double * MADNESS_RESTRICT rhoa = xc_args[enum_rhoa].ptr();
@@ -324,62 +327,110 @@ void XCfunctional::make_libxc_args(const std::vector< madness::Tensor<double> >&
         }
         else if (is_gga()) {
             // input
-            const double * MADNESS_RESTRICT rhoa  = xc_args[enum_rhoa].ptr();
-            const double * MADNESS_RESTRICT rhob  = xc_args[enum_rhob].ptr();
+            if (use_intermediates) {
+                const double *MADNESS_RESTRICT rhoa = xc_args[enum_rhoa].ptr();
+                const double *MADNESS_RESTRICT rhob = xc_args[enum_rhob].ptr();
 
-            const double * MADNESS_RESTRICT chiaa = xc_args[enum_chi_aa].ptr();
-            const double * MADNESS_RESTRICT chiab = xc_args[enum_chi_ab].ptr();
-            const double * MADNESS_RESTRICT chibb = xc_args[enum_chi_bb].ptr();
+                const double *MADNESS_RESTRICT chiaa = xc_args[enum_chi_aa].ptr();
+                const double *MADNESS_RESTRICT chiab = xc_args[enum_chi_ab].ptr();
+                const double *MADNESS_RESTRICT chibb = xc_args[enum_chi_bb].ptr();
 
-            const double * MADNESS_RESTRICT zetaa_x = xc_args[enum_zetaa_x].ptr();
-            const double * MADNESS_RESTRICT zetaa_y = xc_args[enum_zetaa_y].ptr();
-            const double * MADNESS_RESTRICT zetaa_z = xc_args[enum_zetaa_z].ptr();
+                const double *MADNESS_RESTRICT zetaa_x = xc_args[enum_zetaa_x].ptr();
+                const double *MADNESS_RESTRICT zetaa_y = xc_args[enum_zetaa_y].ptr();
+                const double *MADNESS_RESTRICT zetaa_z = xc_args[enum_zetaa_z].ptr();
 
-            const double * MADNESS_RESTRICT zetab_x = xc_args[enum_zetab_x].ptr();
-            const double * MADNESS_RESTRICT zetab_y = xc_args[enum_zetab_y].ptr();
-            const double * MADNESS_RESTRICT zetab_z = xc_args[enum_zetab_z].ptr();
+                const double *MADNESS_RESTRICT zetab_x = xc_args[enum_zetab_x].ptr();
+                const double *MADNESS_RESTRICT zetab_y = xc_args[enum_zetab_y].ptr();
+                const double *MADNESS_RESTRICT zetab_z = xc_args[enum_zetab_z].ptr();
 
-            // might happen if there are no beta electrons
-            madness::Tensor<double> dummy;
-            if ((rhob==NULL) or (chiab==NULL) or (chibb==NULL)) {
-                dummy=madness::Tensor<double>(np);
+                // might happen if there are no beta electrons
+                madness::Tensor<double> dummy;
+                if ((rhob == NULL) or (chiab == NULL) or (chibb == NULL)) {
+                    dummy = madness::Tensor<double>(np);
+                }
+                if (rhob == NULL) rhob = dummy.ptr();
+                if (chiab == NULL) chiab = dummy.ptr();
+                if (chibb == NULL) chibb = dummy.ptr();
+
+                rho = madness::Tensor<double>(np * 2L);
+                drho[0] = madness::Tensor<double>(np * 2L);
+                drho[1] = madness::Tensor<double>(np * 2L);
+                drho[2] = madness::Tensor<double>(np * 2L);
+                sigma = madness::Tensor<double>(np * 3L);
+
+                double *MADNESS_RESTRICT dens = rho.ptr();
+                double *MADNESS_RESTRICT sig = sigma.ptr();
+                double *MADNESS_RESTRICT ddensx = drho[0].ptr();
+                double *MADNESS_RESTRICT ddensy = drho[1].ptr();
+                double *MADNESS_RESTRICT ddensz = drho[2].ptr();
+
+
+                for (long i = 0; i < np; i++) {
+
+                    double ra = munge(rhoa[i]);
+                    double rb = munge(rhob[i]);
+
+                    dens[2 * i] = ra;
+                    dens[2 * i + 1] = rb;
+                    sig[3 * i] = std::max(1.e-14, ra * ra * chiaa[i]);  // aa
+                    sig[3 * i + 1] = std::max(1.e-14, ra * rb * chiab[i]);  // ab
+                    sig[3 * i + 2] = std::max(1.e-14, rb * rb * chibb[i]);  // bb
+
+                    ddensx[2 * i] = ra * zetaa_x[i];
+                    ddensx[2 * i + 1] = rb * zetab_x[i];
+                    ddensy[2 * i] = ra * zetaa_y[i];
+                    ddensy[2 * i + 1] = rb * zetab_y[i];
+                    ddensz[2 * i] = ra * zetaa_z[i];
+                    ddensz[2 * i + 1] = rb * zetab_z[i];
+                }
             }
-            if (rhob==NULL) rhob=dummy.ptr();
-            if (chiab==NULL) chiab=dummy.ptr();
-            if (chibb==NULL) chibb=dummy.ptr();
+            else{
+                const double *MADNESS_RESTRICT rhoa = xc_args[enum_rhoa].ptr();
+                const double *MADNESS_RESTRICT rhob = xc_args[enum_rhob].ptr();
 
-            rho   = madness::Tensor<double>(np*2L);
-            drho[0]  = madness::Tensor<double>(np*2L);
-            drho[1]  = madness::Tensor<double>(np*2L);
-            drho[2]  = madness::Tensor<double>(np*2L);
-            sigma = madness::Tensor<double>(np*3L);
+                const double *MADNESS_RESTRICT sigma_aa = xc_args[enum_saa].ptr();
+                const double *MADNESS_RESTRICT sigma_ab = xc_args[enum_sab].ptr();
+                const double *MADNESS_RESTRICT sigma_bb = xc_args[enum_sbb].ptr();
 
-            double * MADNESS_RESTRICT dens = rho.ptr();
-            double * MADNESS_RESTRICT sig  = sigma.ptr();
-            double * MADNESS_RESTRICT ddensx  = drho[0].ptr();
-            double * MADNESS_RESTRICT ddensy  = drho[1].ptr();
-            double * MADNESS_RESTRICT ddensz  = drho[2].ptr();
+                const double *MADNESS_RESTRICT drhoa_x = xc_args[enum_drhoa_x].ptr();
+                const double *MADNESS_RESTRICT drhoa_y = xc_args[enum_drhoa_y].ptr();
+                const double *MADNESS_RESTRICT drhoa_z = xc_args[enum_drhoa_z].ptr();
 
+                const double *MADNESS_RESTRICT drhob_x = xc_args[enum_drhob_x].ptr();
+                const double *MADNESS_RESTRICT drhob_y = xc_args[enum_drhob_y].ptr();
+                const double *MADNESS_RESTRICT drhob_z = xc_args[enum_drhob_z].ptr();
 
-            for (long i=0; i<np; i++) {
+                rho = madness::Tensor<double>(np * 2L);
+                drho[0] = madness::Tensor<double>(np * 2L);
+                drho[1] = madness::Tensor<double>(np * 2L);
+                drho[2] = madness::Tensor<double>(np * 2L);
+                sigma = madness::Tensor<double>(np * 3L);
 
-                double ra=munge(rhoa[i]);
-                double rb=munge(rhob[i]);
-
-                dens[2*i  ] = ra;
-                dens[2*i+1] = rb;
-                sig[3*i  ]  = std::max(1.e-14,ra * ra * chiaa[i]);  // aa
-                sig[3*i+1]  = std::max(1.e-14,ra * rb * chiab[i]);  // ab
-                sig[3*i+2]  = std::max(1.e-14,rb * rb * chibb[i]);  // bb
-
-                ddensx[2*i  ]=ra * zetaa_x[i];
-                ddensx[2*i+1]=rb * zetab_x[i];
-                ddensy[2*i  ]=ra * zetaa_y[i];
-                ddensy[2*i+1]=rb * zetab_y[i];
-                ddensz[2*i  ]=ra * zetaa_z[i];
-                ddensz[2*i+1]=rb * zetab_z[i];
+                double *MADNESS_RESTRICT dens = rho.ptr();
+                double *MADNESS_RESTRICT sig = sigma.ptr();
+                double *MADNESS_RESTRICT ddensx = drho[0].ptr();
+                double *MADNESS_RESTRICT ddensy = drho[1].ptr();
+                double *MADNESS_RESTRICT ddensz = drho[2].ptr();
 
 
+                for (long i = 0; i < np; i++) {
+
+                    double ra = munge(rhoa[i]);
+                    double rb = munge(rhob[i]);
+
+                    dens[2 * i] = ra;
+                    dens[2 * i + 1] = rb;
+                    sig[3 * i] = std::max(1.e-14, sigma_aa[i]);  // aa
+                    sig[3 * i + 1] = std::max(1.e-14, sigma_ab[i]);  // ab
+                    sig[3 * i + 2] = std::max(1.e-14, sigma_bb[i]);  // bb
+
+                    ddensx[2 * i] = drhoa_x[i];
+                    ddensx[2 * i + 1] = drhob_x[i];
+                    ddensy[2 * i] = drhoa_y[i];
+                    ddensy[2 * i + 1] = drhob_y[i];
+                    ddensz[2 * i] = drhoa_z[i];
+                    ddensz[2 * i + 1] = drhob_z[i];
+                }
             }
             if (need_response) {
                 MADNESS_EXCEPTION("no spin polarized DFT response in xcfunctional",1);
